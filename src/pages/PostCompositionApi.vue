@@ -2,8 +2,7 @@
   <div>
     <h1>Страница с постами</h1>
     <my-input
-        :model-value="searchQuery"
-        @update:model-value="setSearchQuery"
+        v-model="searchQuery"
         v-focus
         placeholder="Поиск..."
     >
@@ -16,8 +15,7 @@
         Создать пост
       </my-button>
       <my-select
-          model-value="selectedSort"
-          @update:model-value="setSelectedSort"
+          v-model="selectedSort"
           :options="sortOptions"
       />
     </div>
@@ -37,8 +35,8 @@
           class="page"
           v-for="pageNumber in totalPages"
           :class="{
-                'current-page': page === pageNumber
-              }"
+            'current-page': page === pageNumber
+          }"
           @click="changePage(pageNumber)"
           :key="pageNumber"
       >
@@ -56,7 +54,9 @@ import MyDialog from "@/components/UI/MyDialog.vue";
 import MyButton from "@/components/UI/MyButton.vue";
 import MySelect from "@/components/UI/MySelect.vue";
 import MyInput from "@/components/UI/MyInput.vue";
-import {mapActions, mapGetters, mapMutations, mapState} from "vuex";
+import useSortedPosts from "@/components/hooks/useSortedPosts";
+import {usePosts} from "@/components/hooks/usePosts";
+import useSortedAndSearchedPosts from "@/components/hooks/useSortedAndSearchedPosts";
 
 export default {
   components: {
@@ -69,53 +69,27 @@ export default {
   data() {
     return {
       dialogVisible: false,
+      sortOptions: [
+        {value: 'id', name: 'По id'},
+        {value: 'title', name: 'По названию'},
+        {value: 'body', name: 'По содержанию'}
+      ]
     }
   },
-  methods: {
-    ...mapMutations({
-      setPage: 'post/setPage',
-      setSearchQuery: 'post/setSearchQuery',
-      setSelectedSort: 'post/setSelectedSort'
-    }),
-    ...mapActions({
-      fetchPosts: 'post/fetchPosts'
-    }),
-    createPost(post) {
-      this.posts.push(post);
-      this.dialogVisible = false;
-    },
-    removePost(post) {
-      this.posts = this.posts.filter(p => p.id !== post.id);
-    },
-    showDialog() {
-      this.dialogVisible = true;
-    },
-    changePage(pageNumber) {
-      this.page = pageNumber;
-    },
-  },
-  mounted() {
-    this.fetchPosts();
-  },
-  computed: {
-    ...mapState({
-      posts: state => state.post.posts,
-      isPostsLoading: state => state.post.isPostsLoading,
-      searchQuery: state => state.post.searchQuery,
-      selectedSort: state => state.post.selectedSort,
-      page: state => state.post.page,
-      limit: state => state.post.limit,
-      totalPages: state => state.post.totalPages,
-      sortOptions: state => state.post.sortOptions
-    }),
-    ...mapGetters({
-      sortedPosts: 'post/sortedPosts',
-      sortedAndSearchedPosts: 'post/sortedAndSearchedPosts',
-    })
-  },
-  watch: {
-    page() {
-      this.fetchPosts();
+  setup(props) {
+    const {totalPages, isPostsLoading, posts} = usePosts(10);
+    const {sortedPosts, selectedSort} = useSortedPosts(posts);
+    const {searchQuery, sortedAndSearchedPosts} = useSortedAndSearchedPosts(sortedPosts)
+    const addLike = () => {
+      likes.value += 1
+    }
+    return {
+      posts,
+      totalPages,
+      isPostsLoading,
+      selectedSort,
+      searchQuery,
+      sortedAndSearchedPosts
     }
   }
 }
